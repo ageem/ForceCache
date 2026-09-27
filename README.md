@@ -42,24 +42,36 @@ than Chrome's version gives you.
 
 ## Install
 
-**From source (works today):**
+**Chrome / Edge / Brave / Arc / Opera / Vivaldi (from source):**
 1. Clone or download this repo
-2. Open `chrome://extensions`
+2. Open `chrome://extensions` (or that browser's equivalent)
 3. Enable **Developer mode** (top right)
 4. Click **Load unpacked** → select the `ForceCache` folder
 
-**Chrome Web Store:** coming soon — this repo will be updated with a
-link once it's live.
+**Firefox (from source):**
+1. Run `npm run build:firefox` (or use `manifest.firefox.json` directly)
+2. Open `about:debugging#/runtime/this-firefox`
+3. **Load Temporary Add-on** → pick `manifest.firefox.json` (or the
+   zipped `dist/forcecache-firefox.zip`)
 
-**Other Chromium browsers** (Edge, Brave, Arc, Opera, Vivaldi): the
-same unpacked folder works via each browser's own
-`chrome://extensions`-equivalent page. Store listings for these are
-planned post-Chrome-launch.
+**Chrome Web Store / Firefox Add-ons / Edge Add-ons:** submissions are
+in progress — this section will be updated with links once each is live.
 
-**Firefox:** not yet supported. Firefox's `browsingData` API can't
-scope clearing to a single origin the way Chrome's can, so this needs
-a real port rather than a repackage. Tracked as a future improvement —
-contributions welcome.
+## One codebase, every browser
+
+Chrome, Edge, Brave, Arc, Opera and Vivaldi all run the same Chromium
+extension platform, so they share `manifest.json` as-is. Firefox needs
+its own manifest (`manifest.firefox.json`) because its background model
+and `browsingData` API differ slightly — see [`lib/browser.js`](lib/browser.js)
+for the small compatibility layer that papers over it. Everything else
+(`background.js`, `lib/core.js`, the popup and options UI) is shared,
+unmodified, across every browser.
+
+```bash
+npm run build           # builds dist/forcecache-chrome.zip + dist/forcecache-firefox.zip
+npm run build:chrome    # just Chrome/Chromium
+npm run build:firefox   # just Firefox
+```
 
 ## Permissions, and why
 
@@ -77,22 +89,24 @@ your browser.
 
 ## Structure
 
-No build step, no dependencies.
+No bundler, no dependencies — the `npm run build` scripts just zip files.
 
 ```
-manifest.json      Manifest V3 config
-background.js      Service worker — clearing, reload, badges, menus
-lib/core.js         Shared settings/helpers (ES module)
-popup.html/css/js   Toolbar dropdown
-options.html/css/js Settings page
-styles.css          Shared design tokens (light/dark)
+manifest.json          Chromium manifest
+manifest.firefox.json  Firefox manifest (background.scripts, gecko id, extra perms)
+background.js          Background logic — clearing, reload, badges, menus
+lib/core.js            Shared settings/helpers (ES module)
+lib/browser.js         Chrome/Firefox API compatibility shim
+popup.html/css/js      Toolbar dropdown
+options.html/css/js    Settings page
+styles.css             Shared design tokens (light/dark)
+scripts/build.js        Packages dist/forcecache-<browser>.zip
 ```
 
 ## Contributing
 
 Issues and PRs welcome — this is a free tool built to be genuinely
-useful, not a product. If you want to take on the Firefox port, open
-an issue first so we can talk through the origin-scoping problem.
+useful, not a product.
 
 ## License
 

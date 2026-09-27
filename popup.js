@@ -1,4 +1,5 @@
 import { DATA_TYPES, getSettings, saveSettings, getOrigin } from "./lib/core.js";
+import { ext } from "./lib/browser.js";
 
 const $ = (id) => document.getElementById(id);
 const isMac = navigator.platform.toLowerCase().includes("mac");
@@ -42,7 +43,7 @@ function run(mode, force = false) {
   status("");
   setStage(mode === "clear" ? "clearing" : "reloading");
 
-  const port = chrome.runtime.connect({ name: "run" });
+  const port = ext.runtime.connect({ name: "run" });
   port.onMessage.addListener((msg) => {
     if (msg.stage === "result") {
       port.disconnect();
@@ -75,7 +76,7 @@ function run(mode, force = false) {
 }
 
 async function init() {
-  [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  [tab] = await ext.tabs.query({ active: true, currentWindow: true });
   const origin = getOrigin(tab?.url || "");
   $("site").textContent = origin ? new URL(origin).host : "Not an http(s) page — hard reload only";
   if (!origin) document.querySelector('[data-mode="clear"]').disabled = true;
@@ -99,15 +100,15 @@ async function init() {
   $("scope").checked = s.scope === "site";
   $("scope").onchange = (e) => saveSettings({ scope: e.target.checked ? "site" : "origin" });
 
-  const rules = await chrome.declarativeNetRequest.getSessionRules();
-  $("noCache").checked = rules.some((r) => r.id === tab.id + 1);
+  const { on: noCacheOn } = await ext.runtime.sendMessage({ type: "getNoCache", tabId: tab.id });
+  $("noCache").checked = noCacheOn;
   $("noCache").disabled = !origin;
   $("noCache").onchange = async (e) => {
-    await chrome.runtime.sendMessage({ type: "setNoCache", tabId: tab.id, on: e.target.checked });
+    await ext.runtime.sendMessage({ type: "setNoCache", tabId: tab.id, on: e.target.checked });
     status(e.target.checked ? "Cache disabled for this tab" : "Cache re-enabled", "ok");
   };
 }
 
 document.querySelectorAll(".actions button").forEach((b) => (b.onclick = () => run(b.dataset.mode)));
-$("openOptions").onclick = () => chrome.runtime.openOptionsPage();
+$("openOptions").onclick = () => ext.runtime.openOptionsPage();
 init();

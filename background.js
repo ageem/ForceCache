@@ -1,8 +1,10 @@
-// ForceCache — background service worker
+// ForceCache — background service worker (Chrome/Edge/Brave/Arc/Opera)
+// or background script (Firefox) — see lib/browser.js for the split.
 import {
   HISTORY_KEY, MAX_HISTORY, SETTINGS_KEY, getSettings, getOrigin,
   originsFor, isProtected, selectedTypes, label
 } from "./lib/core.js";
+import { ext, isFirefox, browsingDataFilter, supportsSessionRules } from "./lib/browser.js";
 
 const NO_CACHE_HEADERS = [
   { header: "Cache-Control", operation: "set", value: "no-cache, no-store" },
@@ -13,10 +15,10 @@ const NO_CACHE_HEADERS = [
 
 async function applyClickMode() {
   const { clickMode } = await getSettings();
-  await chrome.action.setPopup({ popup: clickMode === "instant" ? "" : "popup.html" });
+  await ext.action.setPopup({ popup: clickMode === "instant" ? "" : "popup.html" });
 }
 
-chrome.storage.onChanged.addListener((changes) => {
+ext.storage.onChanged.addListener((changes) => {
   if (changes[SETTINGS_KEY]) applyClickMode();
 });
 applyClickMode();
@@ -24,28 +26,31 @@ applyClickMode();
 // ---------- helpers ----------
 
 async function logHistory(entry) {
-  const stored = await chrome.storage.local.get(HISTORY_KEY);
+  const stored = await ext.storage.local.get(HISTORY_KEY);
   const history = [entry, ...(stored[HISTORY_KEY] || [])].slice(0, MAX_HISTORY);
-  await chrome.storage.local.set({ [HISTORY_KEY]: history });
+  await ext.storage.local.set({ [HISTORY_KEY]: history });
 }
 
 async function isNoCache(tabId) {
-  const rules = await chrome.declarativeNetRequest.getSessionRules();
-  return rules.some((r) => r.id === tabId + 1);
+  if (supportsSessionRules()) {
+    const rules = await ext.declarativeNetRequest.getSessionRules();
+    return rules.some((r) => r.id === tabId + 1);
+  }
+  return noCacheTabsFallback.has(tabId);
 }
 
 async function refreshBadge(tabId) {
   try {
     const on = await isNoCache(tabId);
-    await chrome.action.setBadgeText({ text: on ? "NC" : "", tabId });
-    if (on) await chrome.action.setBadgeBackgroundColor({ color: "#b45309", tabId });
+    await ext.action.setBadgeText({ text: on ? "NC" : "", tabId });
+    if (on) await ext.action.setBadgeBackgroundColor({ color: "#b45309", tabId });
   } catch { /* tab gone */ }
 }
 
 async function flashBadge(text, color, tabId) {
   try {
-    await chrome.action.setBadgeText({ text, tabId });
-    await chrome.action.setBadgeBackgroundColor({ color, tabId });
+    await ext.action.setBadgeText({ text, tabId });
+    await ext.action.setBadgeBackgroundColor({ color, tabId });
     setTimeout(() => refreshBadge(tabId), 1400);
   } catch { /* tab gone */ }
 }
@@ -56,7 +61,7 @@ function waitForTabComplete(tabId, timeoutMs = 8000) {
     const finish = (r) => {
       if (done) return;
       done = true;
-      chrome.tabs.onUpdated.removeListener(listener);
+      ext.tabs.onUpdated.removeListener(listener);
       clearTimeout(timer);
       resolve(r);
     };
@@ -64,13 +69,13 @@ function waitForTabComplete(tabId, timeoutMs = 8000) {
       if (id === tabId && info.status === "complete") finish(true);
     };
     const timer = setTimeout(() => finish(false), timeoutMs);
-    chrome.tabs.onUpdated.addListener(listener);
+    ext.tabs.onUpdated.addListener(listener);
   });
 }
 
 async function showToast(tabId, message) {
   try {
-    await chrome.scripting.executeScript({
+    await ext.scripting.executeScript({
       target: { tabId },
       args: [message],
       func: (msg) => {
@@ -110,8 +115,8 @@ async function showToast(tabId, message) {
 async function run({ mode = "clear", tabId, force = false }, report = () => {}) {
   const settings = await getSettings();
   const tab = tabId
-    ? await chrome.tabs.get(tabId)
-    : (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
+    ? await ext.tabs.get(tabId)
+    : (await ext.tabs.query({ active: true, currentWindow: true }))[0];
   if (!tab?.id) return { ok: false, error: "No active tab" };
 
   const origin = getOrigin(tab.url || "");
@@ -119,7 +124,7 @@ async function run({ mode = "clear", tabId, force = false }, report = () => {}) 
 
   if (!origin || mode !== "clear") {
     report("reloading");
-    await chrome.tabs.reload(tab.id, { bypassCache });
+    await ext.tabs.reload(tab.id, { bypassCache });
     await waitForTabComplete(tab.id);
     report("done");
     return { ok: true, cleared: [] };
@@ -136,8 +141,8 @@ async function run({ mode = "clear", tabId, force = false }, report = () => {}) 
   report("clearing");
   try {
     const dataTypes = Object.fromEntries(types.map((k) => [k, true]));
-    await chrome.browsingData.remove(
-      { origins: originsFor(origin, settings.scope) },
+    await ext.browsingData.remove(
+      browsingDataFilter(originsFor(origin, settings.scope)),
       dataTypes
     );
   } catch (e) {
@@ -150,9 +155,9 @@ async function run({ mode = "clear", tabId, force = false }, report = () => {}) 
 
   report("reloading");
   const targets = settings.allTabs
-    ? (await chrome.tabs.query({ url: `${origin}/*` })).map((t) => t.id)
+    ? (await ext.tabs.query({ url: `${origin}/*` })).map((t) => t.id)
     : [tab.id];
-  await Promise.all(targets.map((id) => chrome.tabs.reload(id, { bypassCache: true })));
+  await Promise.all(targets.map((id) => ext.tabs.reload(id, { bypassCache: true })));
 
   await flashBadge("✓", "#1a7f37", tab.id);
   await logHistory({ ...entry, ok: true });
@@ -167,47 +172,85 @@ async function run({ mode = "clear", tabId, force = false }, report = () => {}) 
 }
 
 // ---------- disable cache for a tab ----------
+//
+// Preferred path: declarativeNetRequest session rules (Chromium always,
+// Firefox 128+). Fallback for older Firefox: blocking webRequest, which
+// MV3 Firefox still permits with the "webRequestBlocking" permission —
+// Chromium MV3 dropped it, which is exactly why the DNR path exists.
 
-async function setNoCache(tabId, on) {
-  await chrome.declarativeNetRequest.updateSessionRules({
-    removeRuleIds: [tabId + 1],
-    addRules: on
-      ? [{
-          id: tabId + 1,
-          priority: 1,
-          action: { type: "modifyHeaders", requestHeaders: NO_CACHE_HEADERS },
-          condition: {
-            tabIds: [tabId],
-            resourceTypes: [
-              "main_frame", "sub_frame", "stylesheet", "script", "image",
-              "font", "xmlhttprequest", "media", "other"
-            ]
-          }
-        }]
-      : []
-  });
-  await refreshBadge(tabId);
-  if (on) await chrome.tabs.reload(tabId, { bypassCache: true });
+const noCacheTabsFallback = new Set();
+
+function webRequestNoCacheListener(details) {
+  if (!noCacheTabsFallback.has(details.tabId)) return {};
+  const headers = (details.requestHeaders || []).filter(
+    (h) => !/^(cache-control|pragma)$/i.test(h.name)
+  );
+  headers.push({ name: "Cache-Control", value: "no-cache, no-store" });
+  headers.push({ name: "Pragma", value: "no-cache" });
+  return { requestHeaders: headers };
 }
 
-chrome.tabs.onRemoved.addListener((tabId) => {
-  chrome.declarativeNetRequest
-    .updateSessionRules({ removeRuleIds: [tabId + 1] })
-    .catch(() => {});
+function ensureWebRequestFallback() {
+  if (!isFirefox || supportsSessionRules() || !ext.webRequest) return;
+  if (ensureWebRequestFallback.installed) return;
+  ensureWebRequestFallback.installed = true;
+  ext.webRequest.onBeforeSendHeaders.addListener(
+    webRequestNoCacheListener,
+    { urls: ["<all_urls>"] },
+    ["blocking", "requestHeaders"]
+  );
+}
+
+async function setNoCache(tabId, on) {
+  if (supportsSessionRules()) {
+    await ext.declarativeNetRequest.updateSessionRules({
+      removeRuleIds: [tabId + 1],
+      addRules: on
+        ? [{
+            id: tabId + 1,
+            priority: 1,
+            action: { type: "modifyHeaders", requestHeaders: NO_CACHE_HEADERS },
+            condition: {
+              tabIds: [tabId],
+              resourceTypes: [
+                "main_frame", "sub_frame", "stylesheet", "script", "image",
+                "font", "xmlhttprequest", "media", "other"
+              ]
+            }
+          }]
+        : []
+    });
+  } else {
+    ensureWebRequestFallback();
+    if (on) noCacheTabsFallback.add(tabId);
+    else noCacheTabsFallback.delete(tabId);
+  }
+  await refreshBadge(tabId);
+  if (on) await ext.tabs.reload(tabId, { bypassCache: true });
+}
+
+ext.tabs.onRemoved.addListener((tabId) => {
+  noCacheTabsFallback.delete(tabId);
+  if (supportsSessionRules()) {
+    ext.declarativeNetRequest
+      .updateSessionRules({ removeRuleIds: [tabId + 1] })
+      .catch(() => {});
+  }
 });
 
 // ---------- entry points ----------
 
-chrome.runtime.onMessage.addListener((msg, _sender, respond) => {
+ext.runtime.onMessage.addListener((msg, _sender, respond) => {
   if (msg.type === "run") run(msg).then(respond);
   else if (msg.type === "setNoCache") setNoCache(msg.tabId, msg.on).then(() => respond({ ok: true }));
+  else if (msg.type === "getNoCache") isNoCache(msg.tabId).then((on) => respond({ on }));
   else return false;
   return true;
 });
 
 // The popup opens a port for "run" so it can show live progress
 // (clearing → reloading → done) instead of just freezing while it waits.
-chrome.runtime.onConnect.addListener((port) => {
+ext.runtime.onConnect.addListener((port) => {
   if (port.name !== "run") return;
   port.onMessage.addListener((msg) => {
     run(msg, (stage) => {
@@ -219,21 +262,21 @@ chrome.runtime.onConnect.addListener((port) => {
 });
 
 // Only fires in "instant" mode (no popup set).
-chrome.action.onClicked.addListener(() => run({ mode: "clear" }));
+ext.action.onClicked.addListener(() => run({ mode: "clear" }));
 
-chrome.commands.onCommand.addListener(async (command) => {
+ext.commands.onCommand.addListener(async (command) => {
   if (command === "hard-reload") return run({ mode: "clear" });
   if (command === "hard-reload-simple") return run({ mode: "hard" });
 });
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.removeAll(() => {
-    chrome.contextMenus.create({ id: "clear", title: "ForceCache: Empty Cache and Hard Reload", contexts: ["page", "action"] });
-    chrome.contextMenus.create({ id: "hard", title: "ForceCache: Hard Reload (no clearing)", contexts: ["page", "action"] });
+ext.runtime.onInstalled.addListener(() => {
+  ext.contextMenus.removeAll(() => {
+    ext.contextMenus.create({ id: "clear", title: "ForceCache: Empty Cache and Hard Reload", contexts: ["page", "action"] });
+    ext.contextMenus.create({ id: "hard", title: "ForceCache: Hard Reload (no clearing)", contexts: ["page", "action"] });
   });
   applyClickMode();
 });
 
-chrome.contextMenus.onClicked.addListener((info) => {
+ext.contextMenus.onClicked.addListener((info) => {
   run({ mode: info.menuItemId });
 });

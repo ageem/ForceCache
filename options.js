@@ -1,9 +1,14 @@
 import { DATA_TYPES, HISTORY_KEY, getSettings, saveSettings, timeAgo, label } from "./lib/core.js";
+import { ext, isFirefox } from "./lib/browser.js";
+
+const SHORTCUTS_URL = isFirefox
+  ? "about:addons" // Firefox has no direct shortcuts deep link; Manage Extension Shortcuts lives under the gear menu there
+  : "chrome://extensions/shortcuts";
 
 const $ = (id) => document.getElementById(id);
 
 async function renderHistory() {
-  const { [HISTORY_KEY]: history = [] } = await chrome.storage.local.get(HISTORY_KEY);
+  const { [HISTORY_KEY]: history = [] } = await ext.storage.local.get(HISTORY_KEY);
   const list = $("historyList");
   list.replaceChildren();
   if (!history.length) {
@@ -29,7 +34,7 @@ async function renderHistory() {
 }
 
 async function init() {
-  $("ver").textContent = `v${chrome.runtime.getManifest().version}`;
+  $("ver").textContent = `v${ext.runtime.getManifest().version}`;
   const s = await getSettings();
 
   for (const t of DATA_TYPES) {
@@ -63,8 +68,8 @@ async function init() {
 }
 
 $("clearHistory").onclick = async () => {
-  await chrome.storage.local.set({ [HISTORY_KEY]: [] });
+  await ext.storage.local.set({ [HISTORY_KEY]: [] });
   renderHistory();
 };
-$("editShortcuts").onclick = () => chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+$("editShortcuts").onclick = () => ext.tabs.create({ url: SHORTCUTS_URL });
 init();
