@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>ForceCache Settings</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="options.css" />
+</head>
+<body>
+<main>
+  <header class="brand"><img src="icon48.png" alt="" />ForceCache <span class="muted ver" id="ver"></span></header>
+
+  <section class="card">
+    <h2>Toolbar icon</h2>
+    <p class="muted">Shortcuts work either way.</p>
+    <label class="row"><span>Open the menu on click<small>Off = instant Empty Cache and Hard Reload, menu on right-click</small></span>
+      <span class="switch"><input type="checkbox" id="popupMode" /><span></span></span></label>
+  </section>
+
+  <section class="card">
+    <h2>What “Empty Cache” clears</h2>
+    <p class="muted">Always scoped to the current site, never the whole browser.</p>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <section class="card">
+    <h2>Behaviour</h2>
+    <label class="row"><span>Include www / apex hostnames</span><span class="switch"><input type="checkbox" id="scope" /><span></span></span></label>
+    <label class="row"><span>Reload every tab on the site</span><span class="switch"><input type="checkbox" id="allTabs" /><span></span></span></label>
+    <label class="row"><span>Show on-page confirmation toast</span><span class="switch"><input type="checkbox" id="toast" /><span></span></span></label>
+  </section>
+
+  <section class="card">
+    <h2>Protected sites</h2>
+    <p class="muted">One host per line (subdomains included). ForceCache asks before clearing these — handy for production.</p>
+    <textarea id="protected" placeholder="www.example.com&#10;admin.example.com" spellcheck="false"></textarea>
+  </section>
+
+  <section class="card">
+    <div class="head"><h2>Recent activity</h2><button id="clearHistory" class="link-btn">Clear</button></div>
+    <ul id="historyList"></ul>
+  </section>
+
+  <section class="card">
+    <h2>Shortcuts</h2>
+    <div class="row"><span>Empty cache and hard reload</span><kbd>⌘⇧E</kbd></div>
+    <div class="row"><span>Hard reload (nothing cleared)</span><kbd>⌘⇧U</kbd></div>
+    <button id="editShortcuts" class="link-btn">Edit shortcuts…</button>
+  </section>
+</main>
+<script type="module" src="options.js"></script>
+</body>
+</html>

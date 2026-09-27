@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "ForceCache",
+  "version": "2.0.0",
+  "description": "Empty Cache and Hard Reload for the current site in one click — no DevTools. Scoped to the active site so your other logins stay intact.",
+  "homepage_url": "https://github.com/ageem/ForceCache",
+  "permissions": [
+    "browsingData",
+    "activeTab",
+    "scripting",
+    "contextMenus",
+    "declarativeNetRequest",
+    "storage"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": {
+    "default_title": "ForceCache",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+  },
+  "options_page": "options.html",
+  "commands": {
+    "hard-reload": {
+      "suggested_key": { "default": "Ctrl+Shift+E", "mac": "Command+Shift+E" },
+      "description": "Empty cache and hard reload this site"
+    },
+    "hard-reload-simple": {
+      "suggested_key": { "default": "Ctrl+Shift+U", "mac": "Command+Shift+U" },
+      "description": "Hard reload (bypass cache, nothing cleared)"
+    }
+  },
+  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+}

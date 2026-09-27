@@ -1,0 +1,55 @@
+body { width: 340px; padding: 12px; }
+header { display: flex; align-items: center; justify-content: space-between; }
+.site {
+  margin: 8px 0 10px; padding: 6px 10px; border-radius: 8px; background: var(--panel-2);
+  border: 1px solid var(--border); color: var(--muted); font: 12px ui-monospace, Menlo, monospace;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.actions { display: flex; flex-direction: column; gap: 4px; }
+.actions button {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+  padding: 9px 12px; border: 1px solid var(--border); border-radius: 9px; cursor: pointer;
+  background: var(--panel); color: var(--text); font: inherit;
+}
+.actions button:hover { background: var(--panel-2); }
+.actions .primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.actions .primary:hover { filter: brightness(1.08); background: var(--accent); }
+.actions .primary kbd { background: rgba(0,0,0,.2); border-color: transparent; color: #fff; }
+.actions button:disabled { opacity: .5; cursor: default; }
+#status { min-height: 18px; margin: 6px 2px; font-size: 12px; color: var(--muted); }
+#status.ok { color: var(--ok); } #status.err { color: var(--danger); }
+#status button { font: inherit; color: var(--accent); background: none; border: 0; cursor: pointer; text-decoration: underline; }
+
+/* progress */
+.progress {
+  display: flex; align-items: center; gap: 12px; margin-top: 4px;
+  padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-2);
+  animation: rise 140ms ease;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.progress-icon { position: relative; width: 26px; height: 26px; flex: none; }
+.progress-icon svg { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 120ms ease; }
+.spinner circle { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 60; stroke-dashoffset: 15; transform-origin: center; animation: spin 0.8s linear infinite; }
+.check path, .fail path { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; stroke-dashoffset: 40; transition: stroke-dashoffset 260ms ease 60ms; }
+.check path { stroke: var(--ok); }
+.fail path { stroke: var(--danger); }
+.progress.clearing .spinner, .progress.reloading .spinner { opacity: 1; }
+.progress.done .check { opacity: 1; }
+.progress.done .check path { stroke-dashoffset: 0; }
+.progress.error .fail { opacity: 1; }
+.progress.error .fail path { stroke-dashoffset: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.progress-body { flex: 1; min-width: 0; }
+.progress-label { font-weight: 600; font-size: 12.5px; }
+.progress-steps { display: flex; gap: 10px; margin-top: 4px; font-size: 11px; color: var(--muted); }
+.progress-steps span { position: relative; padding-left: 12px; }
+.progress-steps span::before {
+  content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 6px; height: 6px; border-radius: 50%; background: var(--border);
+  transition: background 150ms ease;
+}
+.progress-steps span.active { color: var(--text); }
+.progress-steps span.active::before { background: var(--accent); }
+.progress-steps span.reached::before { background: var(--ok); }
+section { margin-top: 8px; }
+section > h2 { margin-bottom: 6px; color: var(--muted); font-weight: 500; }

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>ForceCache</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <div class="brand"><img src="icon48.png" alt="" />ForceCache</div>
+    <button class="icon-btn" id="openOptions" title="Settings" aria-label="Settings">⚙</button>
+  </header>
+  <div class="site" id="site" title="Cache is cleared for this origin only">—</div>
+
+  <nav class="actions" id="actions">
+    <button data-mode="normal"><span>Normal Reload</span><kbd>⌘R</kbd></button>
+    <button data-mode="hard"><span>Hard Reload</span><kbd>⇧⌘R</kbd></button>
+    <button data-mode="clear" class="primary"><span>Empty Cache and Hard Reload</span><kbd id="clearKey">⌘⇧E</kbd></button>
+  </nav>
+
+  <div id="progress" class="progress" hidden>
+    <div class="progress-icon">
+      <svg class="spinner" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13"></circle></svg>
+      <svg class="check" viewBox="0 0 32 32"><path d="M8 17l5 5 11-12"></path></svg>
+      <svg class="fail" viewBox="0 0 32 32"><path d="M10 10l12 12M22 10L10 22"></path></svg>
+    </div>
+    <div class="progress-body">
+      <div class="progress-label" id="progressLabel">Clearing site data…</div>
+      <div class="progress-steps" id="progressSteps">
+        <span data-step="clearing">Clear</span>
+        <span data-step="reloading">Reload</span>
+        <span data-step="done">Done</span>
+      </div>
+    </div>
+  </div>
+  <div id="status" role="status" aria-live="polite"></div>
+
+  <section>
+    <h2>Clear with “Empty Cache”</h2>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <section>
+    <label class="row"><span>Disable cache on this tab<small>Like DevTools, until the tab closes</small></span>
+      <span class="switch"><input type="checkbox" id="noCache" /><span></span></span></label>
+    <label class="row"><span>Reload all tabs on this site</span>
+      <span class="switch"><input type="checkbox" id="allTabs" /><span></span></span></label>
+    <label class="row"><span>Include www / apex<small>Same site, both hostnames</small></span>
+      <span class="switch"><input type="checkbox" id="scope" /><span></span></span></label>
+  </section>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
