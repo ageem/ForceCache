@@ -13,6 +13,11 @@ package to upload is `dist/forcecache-chrome.zip` in both cases (run
 | Chrome Web Store | chrome.google.com/webstore/devconsole | $5 one-time | Currently blocked — see open items |
 | Edge Add-ons | partner.microsoft.com/dashboard/microsoftedge | Free | Same zip as Chrome, separate dashboard |
 | Firefox (AMO) | addons.mozilla.org/developers | Free | Needs `dist/forcecache-firefox.zip` — separate manifest, see README |
+| Opera Addons | addons.opera.com/developer | Free | Same zip as Chrome, separate dashboard — do after Chrome/Edge clear review |
+
+Brave needs no separate submission — it installs directly from the
+Chrome Web Store. Safari intentionally not in scope (needs an Xcode
+wrapper + $99/yr Apple dev account) unless there's real demand later.
 
 ## Short description (132 char max)
 
