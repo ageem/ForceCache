@@ -1,7 +1,18 @@
-# Chrome Web Store listing — draft copy
+# Store listing — draft copy
 
-Fill in the developer dashboard with this. Not committed logic, just
-copy — edit freely before submitting.
+Fill in the Chrome Web Store and Edge Add-ons dashboards with this. Not
+committed logic, just copy — edit freely before submitting. The listing
+copy below is engine-agnostic and works for both stores unchanged;
+package to upload is `dist/forcecache-chrome.zip` in both cases (run
+`npm run build:chrome` first).
+
+## Where to submit
+
+| Store | URL | Fee | Notes |
+|---|---|---|---|
+| Chrome Web Store | chrome.google.com/webstore/devconsole | $5 one-time | Currently blocked — see open items |
+| Edge Add-ons | partner.microsoft.com/dashboard/microsoftedge | Free | Same zip as Chrome, separate dashboard |
+| Firefox (AMO) | addons.mozilla.org/developers | Free | Needs `dist/forcecache-firefox.zip` — separate manifest, see README |
 
 ## Short description (132 char max)
 
@@ -62,3 +73,10 @@ Dark background, icon + wordmark, tagline: "Hard reload. No DevTools."
 
 ## Distribution
 Public, no payment, no account required to use.
+
+## Edge-specific notes
+- Edge's dashboard calls the privacy tab "Properties" — same answers as
+  Chrome's Privacy practices section above.
+- Edge asks for a support contact email/URL — use the GitHub repo's
+  issues page: https://github.com/ageem/ForceCache/issues
+- Edge review is usually faster than Chrome's (often a few days).
