@@ -4,7 +4,10 @@
 Scoped to the current site only, so clearing it never logs you out of
 anything else — your CMS admin, your email, your other tabs.
 
-![ForceCache popup](docs/ForceCache01.png)
+<p align="center">
+  <img src="docs/ForceCache01.png" width="360" alt="ForceCache popup — reload menu" />
+  <img src="docs/ForceCache02.png" width="360" alt="ForceCache popup — clearing progress" />
+</p>
 
 Built for developers who live in Sitecore, Episerver, WordPress, or any
 stack where the browser cache lies to you about whether your change
